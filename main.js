@@ -4,17 +4,25 @@ import {
 } from './ant.js';
 
 // localStorage はほかのアプリと共有される（同じ t-of.github.io のため）。
-// キーは必ず 'arimichi.' で始める。
-const STORE = 'arimichi.';
+// キーは必ず 'langtons-ant.' で始める。
+const STORE = 'langtons-ant.';
+// 旧 id 'arimichi' の記録を引き継ぐ（新しいキーがなく古いキーがあれば読んで新しいキーに書く。古いキーは消さない）
+const OLD_STORE = 'arimichi.';
 
 function loadRaw(key) {
-  try { return localStorage.getItem(STORE + key); } catch { return null; }
+  try {
+    const v = localStorage.getItem(STORE + key);
+    if (v !== null) return v;
+    const old = localStorage.getItem(OLD_STORE + key);
+    if (old !== null) save(key, JSON.parse(old));
+    return old;
+  } catch { return null; }
 }
 function save(key, value) {
   try { localStorage.setItem(STORE + key, JSON.stringify(value)); } catch { /* 保存できなくても遊べる */ }
 }
 
-WebAppKit.init({ title: 'ありみち', text: '右か左に曲がるだけのアリが、歩くたびにマスの色を変えて模様を描く。曲がり方のルールを変えると、渦・左右対称・三角など、まったく違う形が育つ。' });
+WebAppKit.init({ title: 'ラングトンのアリ', text: '右か左に曲がるだけのアリが、歩くたびにマスの色を変えて模様を描く。曲がり方のルールを変えると、渦・左右対称・三角など、まったく違う形が育つ。' });
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js');
@@ -40,7 +48,7 @@ const store = () => save('state', state);
 state.rule = ruleFromSearch(location.search) || state.rule;   // URL の ?r= は保存したルールより優先
 
 // ---- 音 ----
-// 音声ファイルは使わず Web Audio で作る。オン・オフは 'arimichi.sound' に覚える
+// 音声ファイルは使わず Web Audio で作る。オン・オフは 'langtons-ant.sound' に覚える
 let soundOn = loadRaw('sound') !== 'false';
 
 // iPhone のマナーモードでも鳴らす（Safari 16.4 以降）。
@@ -296,7 +304,7 @@ $('samples').replaceChildren(...SAMPLES.map((s) => {
 // 共有: webapp-kit が document で拾う前に、今のルールと歩数を入れておく
 $('share').addEventListener('click', () => {
   WebAppKit.init({
-    text: `ありみちで ${state.rule} のアリを ${fmt(world.steps)} 歩あるかせた`,
+    text: `ラングトンのアリで ${state.rule} のアリを ${fmt(world.steps)} 歩あるかせた`,
     url: shareUrl(location.origin + location.pathname, state.rule),
   });
 });

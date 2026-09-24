@@ -1,4 +1,4 @@
-// ありみちの中身（盤・アリの 1 歩・ルール文字列・保存と URL の読み書き・見本）。
+// ラングトンのアリの中身（盤・アリの 1 歩・ルール文字列・保存と URL の読み書き・見本）。
 // DOM には触らない。ブラウザでは main.js から、テストでは node test.mjs から読む。
 
 export const SIZE = 160;        // 盤は SIZE × SIZE。上下・左右の端はつながっている
@@ -68,7 +68,7 @@ export function step(w, onPaint) {
   w.steps++;
 }
 
-// ---- 保存（arimichi.state）と URL ----
+// ---- 保存（langtons-ant.state）と URL ----
 
 export const DEFAULT_STATE = { v: 1, rule: 'RL', speed: 1, seenHelp: false };
 

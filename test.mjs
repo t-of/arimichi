@@ -118,7 +118,7 @@ test('URL の ?r=: 正しいルールだけ読み、共有の URL に書ける',
   assert.equal(ruleFromSearch('?r=LLRR'), 'LLRR');
   assert.equal(ruleFromSearch('?x=1&r=RLR'), 'RLR');
   for (const q of ['', '?r=', '?r=R', '?r=llrr', '?r=RLRLRLRLRLRLR', '?r=%3Cscript%3E', '?r=RL%20']) assert.equal(ruleFromSearch(q), null, q);
-  const url = shareUrl('https://t-of.github.io/arimichi/', 'LLRR');
-  assert.equal(url, 'https://t-of.github.io/arimichi/?r=LLRR');
+  const url = shareUrl('https://t-of.github.io/langtons-ant/', 'LLRR');
+  assert.equal(url, 'https://t-of.github.io/langtons-ant/?r=LLRR');
   assert.equal(ruleFromSearch(new URL(url).search), 'LLRR');
 });

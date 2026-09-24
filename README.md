@@ -1,10 +1,12 @@
-# ありみち — アリが描く終わらない模様
+# ラングトンのアリ — アリが描く終わらない模様
 
 右か左に曲がるだけのアリが、歩くたびにマスの色を変えて模様を描く。曲がり方のルールを変えると、渦・左右対称・三角など、まったく違う形が育つ。
 
+旧名 ありみち（旧 id arimichi）。
+
 ## 🔗 リンク
 
-- 遊ぶ: https://t-of.github.io/arimichi/
+- 遊ぶ: https://t-of.github.io/langtons-ant/
 - 制作: [T.OF...](https://t-of.github.io/)
 
 ## 遊び方
@@ -49,4 +51,4 @@ node test.mjs
 
 - 盤は 1 マス = 1 点の Canvas を CSS で拡大して描く。1 フレームで変わったマスの範囲だけを書き直す。
 - 1 フレームで進める歩数は 2,000 歩まで（いちばん速いときでも画面が固まらないように）。
-- 保存は `arimichi.state`（`{ v: 1, rule, speed, seenHelp }`）。盤とアリは保存しない。
+- 保存は `langtons-ant.state`（`{ v: 1, rule, speed, seenHelp }`）。盤とアリは保存しない。旧 id `arimichi.state` / `arimichi.sound` があれば引き継ぐ（main.js の `loadRaw`）。
