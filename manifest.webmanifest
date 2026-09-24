@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "ありみち — アリが描く終わらない模様",
+  "short_name": "ありみち",
+  "description": "右か左に曲がるだけのアリが、歩くたびにマスの色を変えて模様を描く。曲がり方のルールを変えると、渦・左右対称・三角など、まったく違う形が育つ。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1115",
+  "theme_color": "#0f1115",
+  "lang": "ja",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
