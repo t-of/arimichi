@@ -51,11 +51,14 @@ button { font: inherit; color: inherit; }
 .bar__title { margin: 0; font-size: 18px; letter-spacing: 0.04em; }
 .bar__stats { margin: 0 0 0 auto; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bar__stats span { color: var(--fg); }
+.bar__stats + .icon-btn { margin-left: -2px; }
 .icon-btn {
   width: 44px; height: 44px; flex: none;
   border: 1px solid var(--line); background: var(--surface); border-radius: 50%;
   font-size: 18px; font-weight: 700; cursor: pointer;
 }
+.icon-btn svg { width: 22px; height: 22px; display: block; margin: auto; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn[aria-pressed="false"] { color: var(--muted); }
 
 /* 盤: 縦長では幅いっぱいの正方形。操作が最初の画面に入るよう、低い画面では高さに合わせて小さくする */
 .board {

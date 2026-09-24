@@ -39,6 +39,85 @@ const state = readState(loadRaw('state'));
 const store = () => save('state', state);
 state.rule = ruleFromSearch(location.search) || state.rule;   // URL の ?r= は保存したルールより優先
 
+// ---- 音 ----
+// 音声ファイルは使わず Web Audio で作る。オン・オフは 'arimichi.sound' に覚える
+let soundOn = loadRaw('sound') !== 'false';
+
+// iPhone のマナーモードでも鳴らす（Safari 16.4 以降）。
+// 'playback' にすると音楽アプリの曲が止まるので、アプリの音がオンのときだけにする。
+function setAudioSession(on) {
+  try { if (navigator.audioSession) navigator.audioSession.type = on ? 'playback' : 'auto'; } catch { /* 対応していない */ }
+}
+setAudioSession(soundOn);
+
+let actxAudio = null, master = null, lastSound = 0;
+// ブラウザは触る前の音を止めるので、AudioContext は最初に触ったときに作る
+function unlockAudio() {
+  if (!soundOn) return;
+  setAudioSession(true);
+  if (!actxAudio) {
+    try { actxAudio = new (window.AudioContext || window.webkitAudioContext)(); } catch { return; }
+    master = actxAudio.createGain();
+    master.gain.value = 0.5;
+    master.connect(actxAudio.destination);
+  }
+  if (actxAudio.state === 'suspended') actxAudio.resume();
+}
+addEventListener('pointerdown', unlockAudio, true);
+addEventListener('keydown', unlockAudio, true);
+
+// 短い音を 1 つ。notes = [[周波数, 開始の遅れ(秒)], …]
+function tone(notes, { dur = 0.12, type = 'sine', gain = 0.08 } = {}) {
+  if (!soundOn || !actxAudio) return;   // resume() の途中でも予約しておけば、動き出したときに鳴る
+  const now = actxAudio.currentTime;
+  if (now - lastSound < 0.04) return;   // 連打・キーの押しっぱなしで重ねない
+  lastSound = now;
+  for (const [f, at = 0] of notes) {
+    const t = now + at;
+    const o = actxAudio.createOscillator(), g = actxAudio.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(gain, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(master);
+    o.start(t);
+    o.stop(t + dur + 0.03);
+  }
+}
+// 札の音の高さ: 状態 k ごとに五音音階を上っていく
+const PENTA = [0, 2, 4, 7, 9];
+const scale = (k) => 523.25 * 2 ** ((PENTA[k % 5] + 12 * Math.floor(k / 5)) / 12);
+const sfx = {
+  play: () => tone([[523.25], [783.99, 0.07]], { dur: 0.14, type: 'triangle' }),
+  pause: () => tone([[659.25], [440, 0.07]], { dur: 0.14, type: 'triangle' }),
+  step: () => tone([[1318.5]], { dur: 0.04, gain: 0.05 }),
+  reset: () => tone([[784], [587.33, 0.05], [392, 0.1]], { dur: 0.12, type: 'triangle', gain: 0.06 }),
+  card: (k) => tone([[scale(k)]], { dur: 0.1, type: 'triangle' }),
+  add: () => tone([[scale(0)], [scale(2), 0.05]], { dur: 0.09, type: 'triangle', gain: 0.07 }),
+  remove: () => tone([[scale(2)], [scale(0), 0.05]], { dur: 0.09, type: 'triangle', gain: 0.07 }),
+  sample: () => tone([[523.25], [659.25, 0.06], [783.99, 0.12], [1046.5, 0.18]], { dur: 0.2, type: 'triangle', gain: 0.05 }),
+  speed: (n) => tone([[440 * 2 ** (n * 4 / 12)]], { dur: 0.06, gain: 0.06 }),
+  ant: () => tone([[880], [1174.66, 0.035]], { dur: 0.06, gain: 0.06 }),
+  full: () => tone([[196], [185, 0.08]], { dur: 0.14, type: 'square', gain: 0.03 }),
+};
+
+function renderSound() {
+  $('soundBtn').setAttribute('aria-pressed', String(soundOn));
+  $('soundBtn').setAttribute('aria-label', soundOn ? '音: オン' : '音: オフ');
+  $('soundIcon').innerHTML = soundOn
+    ? '<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.8a4.5 4.5 0 0 1 0 6.4M18.3 6a8.5 8.5 0 0 1 0 12"/>'
+    : '<path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9.5 5 5m0-5-5 5"/>';
+}
+$('soundBtn').addEventListener('click', () => {
+  soundOn = !soundOn;
+  save('sound', soundOn);
+  setAudioSession(soundOn);
+  renderSound();
+  if (soundOn) { unlockAudio(); sfx.speed(1); }
+});
+renderSound();
+
 // ---- 盤の描画 ----
 // 盤は 1 マス = 1 点の Canvas を CSS で拡大する。変わったマスだけ ImageData に書き、その範囲だけ画面に出す
 const cells = $('cells');
@@ -135,9 +214,13 @@ function setPlaying(on) {
   if (on) requestAnimationFrame((t) => { last = t; frame(t); });
 }
 
-$('play').addEventListener('click', () => setPlaying(!playing));
-$('step').addEventListener('click', () => { setPlaying(false); step(world, paint); draw(); });
-$('reset').addEventListener('click', () => restart(state.rule));
+function toggle() {
+  setPlaying(!playing);
+  (playing ? sfx.play : sfx.pause)();
+}
+$('play').addEventListener('click', toggle);
+$('step').addEventListener('click', () => { setPlaying(false); step(world, paint); draw(); sfx.step(); });
+$('reset').addEventListener('click', () => { restart(state.rule); sfx.reset(); });
 
 function renderSpeed() {
   for (const b of $('speed').children) b.setAttribute('aria-pressed', String(+b.dataset.speed === state.speed));
@@ -149,6 +232,7 @@ $('speed').addEventListener('click', (e) => {
   acc = 0;
   store();
   renderSpeed();
+  sfx.speed(state.speed);
 });
 
 // 盤をタップするとアリを足す。なぞったときはスクロールになり click は来ない
@@ -156,7 +240,8 @@ $('board').addEventListener('click', (e) => {
   const r = cells.getBoundingClientRect();
   const x = Math.min(SIZE - 1, Math.max(0, Math.floor((e.clientX - r.left) / r.width * SIZE)));
   const y = Math.min(SIZE - 1, Math.max(0, Math.floor((e.clientY - r.top) / r.height * SIZE)));
-  if (!addAnt(world, x, y)) WebAppKit.toast(`アリは ${MAX_ANTS} 匹まで`);
+  if (addAnt(world, x, y)) sfx.ant();
+  else { WebAppKit.toast(`アリは ${MAX_ANTS} 匹まで`); sfx.full(); }
   draw();
 });
 
@@ -186,12 +271,13 @@ $('cards').addEventListener('click', (e) => {
   const b = e.target.closest('button');
   if (!b || b.disabled) return;
   const rule = state.rule;
-  if (b.dataset.op === '+') restart(rule + 'R');
-  else if (b.dataset.op === '-') restart(rule.slice(0, -1));
+  if (b.dataset.op === '+') { restart(rule + 'R'); sfx.add(); }
+  else if (b.dataset.op === '-') { restart(rule.slice(0, -1)); sfx.remove(); }
   else {
     const k = +b.dataset.k;
     const next = TURNS[(TURNS.indexOf(rule[k]) + 1) % TURNS.length];
     restart(rule.slice(0, k) + next + rule.slice(k + 1));
+    sfx.card(k);
   }
   // 札を作り直したので、押した札にフォーカスを戻す（キーボードで続けて押せるように）
   const again = b.dataset.op ? $('cards').querySelector(`[data-op="${b.dataset.op}"]`) : $('cards').children[b.dataset.k];
@@ -203,7 +289,7 @@ $('samples').replaceChildren(...SAMPLES.map((s) => {
   b.className = 'btn';
   b.textContent = s.name;
   if (s.rule) b.dataset.rule = s.rule;
-  b.addEventListener('click', () => restart(s.rule || randomRule()));
+  b.addEventListener('click', () => { restart(s.rule || randomRule()); sfx.sample(); });
   return b;
 }));
 
@@ -219,7 +305,7 @@ $('share').addEventListener('click', () => {
 function openHelp() { $('help').hidden = false; $('helpClose').focus(); }
 function closeHelp() {
   $('help').hidden = true;
-  if (!state.seenHelp) { state.seenHelp = true; store(); setPlaying(true); }
+  if (!state.seenHelp) { state.seenHelp = true; store(); setPlaying(true); sfx.play(); }
 }
 $('helpBtn').addEventListener('click', openHelp);
 $('helpClose').addEventListener('click', closeHelp);
@@ -230,7 +316,7 @@ $('help').addEventListener('click', (e) => { if (e.target === $('help')) closeHe
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !$('help').hidden) { closeHelp(); return; }
   if (!$('help').hidden) return;
-  if (e.key === ' ') { e.preventDefault(); if (!e.repeat) setPlaying(!playing); }
+  if (e.key === ' ') { e.preventDefault(); if (!e.repeat) toggle(); }
   else if (e.key === 'ArrowRight' && !e.target.closest('input')) { e.preventDefault(); $('step').click(); }
 });
 document.addEventListener('keyup', (e) => {
