@@ -106,10 +106,8 @@ button { font: inherit; color: inherit; }
 .card--op { font-size: 22px; font-weight: 400; color: var(--muted); }
 .card:disabled { opacity: 0.35; cursor: default; }
 
-/* 見本: はみ出したら横にスクロール */
-.samples { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; overscroll-behavior-x: contain; }
-.samples::-webkit-scrollbar { display: none; }
-.sample { flex: none; }
+/* 見本: 折り返して全部見せる（横スクロールだと続きがあると分からない幅がある） */
+.samples { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .foot { margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .foot__actions { display: flex; gap: 8px; }

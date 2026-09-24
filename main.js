@@ -200,7 +200,7 @@ $('cards').addEventListener('click', (e) => {
 
 $('samples').replaceChildren(...SAMPLES.map((s) => {
   const b = document.createElement('button');
-  b.className = 'btn sample';
+  b.className = 'btn';
   b.textContent = s.name;
   if (s.rule) b.dataset.rule = s.rule;
   b.addEventListener('click', () => restart(s.rule || randomRule()));
@@ -225,12 +225,16 @@ $('helpBtn').addEventListener('click', openHelp);
 $('helpClose').addEventListener('click', closeHelp);
 $('help').addEventListener('click', (e) => { if (e.target === $('help')) closeHelp(); });
 
-// PC: Space で再生・停止、→ で 1 歩
+// PC: Space で再生・停止、→ で 1 歩。札や見本にフォーカスがあっても Space は再生・停止にする
+// （ボタンは keyup の Space で押されるので、keyup も止める）
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !$('help').hidden) { closeHelp(); return; }
-  if (!$('help').hidden || e.target.closest('button, a, input')) return;
-  if (e.key === ' ') { e.preventDefault(); setPlaying(!playing); }
-  else if (e.key === 'ArrowRight') { e.preventDefault(); $('step').click(); }
+  if (!$('help').hidden) return;
+  if (e.key === ' ') { e.preventDefault(); if (!e.repeat) setPlaying(!playing); }
+  else if (e.key === 'ArrowRight' && !e.target.closest('input')) { e.preventDefault(); $('step').click(); }
+});
+document.addEventListener('keyup', (e) => {
+  if (e.key === ' ' && $('help').hidden) e.preventDefault();
 });
 
 // ---- はじめ ----
