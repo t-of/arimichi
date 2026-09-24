@@ -34,22 +34,58 @@
   <main class="app">
     <header class="bar">
       <h1 class="bar__title">ありみち</h1>
-      <div class="bar__actions">
-        <button class="pill" data-wak="install" hidden>アプリにする</button>
-        <button class="pill" data-wak="share">共有</button>
-      </div>
+      <p class="bar__stats"><span id="steps">0</span> 歩・アリ <span id="antCount">1</span></p>
+      <button class="icon-btn" id="helpBtn" aria-label="遊び方">?</button>
     </header>
 
-    <section class="stage" id="stage">
-      <!-- ここにゲーム本体 -->
-    </section>
+    <div class="board" id="board">
+      <canvas id="cells" width="160" height="160" aria-label="盤。タップするとアリが増える"></canvas>
+      <canvas id="ants" aria-hidden="true"></canvas>
+    </div>
 
-    <footer class="credit">
-      <a href="/">T.OF...</a> のアプリ
-    </footer>
+    <section class="panel">
+      <div class="controls">
+        <button class="btn btn--play" id="play" aria-label="再生">▶</button>
+        <button class="btn" id="step">1 歩</button>
+        <button class="btn" id="reset">はじめから</button>
+      </div>
+      <div class="speed" id="speed" role="group" aria-label="速さ">
+        <button class="btn" data-speed="0">ゆっくり</button>
+        <button class="btn" data-speed="1">ふつう</button>
+        <button class="btn" data-speed="2">はやい</button>
+        <button class="btn" data-speed="3">いちばん</button>
+      </div>
+
+      <h2 class="label">ルール <code id="ruleText">RL</code></h2>
+      <div class="cards" id="cards"></div>
+
+      <h2 class="label">見本</h2>
+      <div class="samples" id="samples"></div>
+
+      <footer class="foot">
+        <div class="foot__actions">
+          <button class="pill" data-wak="install" hidden>アプリにする</button>
+          <button class="pill" data-wak="share" id="share">共有</button>
+        </div>
+        <p class="credit"><a href="/">T.OF...</a> のアプリ</p>
+      </footer>
+    </section>
   </main>
 
+  <div class="help" id="help" hidden>
+    <div class="help__box" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+      <h2 id="helpTitle">遊び方</h2>
+      <ol>
+        <li>アリは今いるマスの色を見て、決まった向きに曲がる。マスの色を次の色に変えて、1 マス進む。これをくり返す。</li>
+        <li>下のルールの札をタップすると曲がり方が変わる（右・左・直＝まっすぐ・戻＝うしろ）。札を足すと色が増える。</li>
+        <li>盤をタップするとアリが増える（8 匹まで）。「見本」から有名な模様も選べる。</li>
+      </ol>
+      <p class="help__note">もとは「ラングトンのアリ（Langton's ant）」という数学のしくみ。右と左だけのアリ（RL）も、1 万歩ほど歩くと突然まっすぐな道を作り始める。</p>
+      <button class="btn btn--primary" id="helpClose">はじめる</button>
+    </div>
+  </div>
+
   <script src="./webapp-kit/webapp-kit.js"></script>
-  <script src="./main.js"></script>
+  <script type="module" src="./main.js"></script>
 </body>
 </html>

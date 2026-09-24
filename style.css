@@ -2,7 +2,14 @@
   --bg: #0f1115;
   --fg: #eceef3;
   --muted: #9aa0ab;
-  --accent: #ffd35c;
+  --accent: #ff7a45;
+  --line: rgba(255, 255, 255, 0.12);
+  --surface: rgba(255, 255, 255, 0.06);
+  --wak-bg: #171a21;
+  --wak-fg: var(--fg);
+  --wak-muted: var(--muted);
+  --wak-accent: var(--accent);
+  --wak-accent-fg: #1a0c05;
 }
 
 * { box-sizing: border-box; }
@@ -19,37 +26,134 @@ body {
 button { font: inherit; color: inherit; }
 [hidden] { display: none !important; }
 
-/* 画面の端に置くものはセーフエリアの分だけ内側に。高さは 100vh ではなく 100dvh */
+/* 画面の端に置くものはセーフエリアの分だけ内側に。高さは 100vh ではなく 100dvh。
+   縦長: 帯 → 盤 → 操作。横長: 左に盤（高さいっぱい）、右に帯と操作 */
 .app {
   min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "bar" "board" "panel";
+  align-content: start;
+  gap: 10px;
+  max-width: 720px;
+  margin: 0 auto;
   padding:
     max(12px, env(safe-area-inset-top))
     max(12px, env(safe-area-inset-right))
     max(12px, env(safe-area-inset-bottom))
     max(12px, env(safe-area-inset-left));
-}
-.bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.bar__title { margin: 0; font-size: 18px; }
-.bar__actions { display: flex; gap: 8px; }
-.pill {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 999px;
-  padding: 6px 14px;
-  font-size: 13px;
-  cursor: pointer;
-}
-.stage {
-  flex: 1;
-  display: grid;
-  place-items: center;
   touch-action: manipulation;   /* ダブルタップ拡大を止める */
   user-select: none;
   -webkit-user-select: none;
 }
-.credit { text-align: center; font-size: 12px; color: var(--muted); }
-.credit a { color: inherit; }
 
-/* 全画面のオーバーレイは opacity ではなく display: none で隠す */
+.bar { grid-area: bar; display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.bar__title { margin: 0; font-size: 18px; letter-spacing: 0.04em; }
+.bar__stats { margin: 0 0 0 auto; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bar__stats span { color: var(--fg); }
+.icon-btn {
+  width: 44px; height: 44px; flex: none;
+  border: 1px solid var(--line); background: var(--surface); border-radius: 50%;
+  font-size: 18px; font-weight: 700; cursor: pointer;
+}
+
+/* 盤: 縦長では幅いっぱいの正方形。操作が最初の画面に入るよう、低い画面では高さに合わせて小さくする */
+.board {
+  grid-area: board;
+  position: relative;
+  justify-self: center;
+  width: min(100%, calc(100dvh - 190px));
+  min-width: min(100%, 240px);
+  aspect-ratio: 1;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #181c24;
+  cursor: crosshair;
+}
+.board canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#cells { image-rendering: pixelated; image-rendering: crisp-edges; }
+#ants { pointer-events: none; }
+
+.panel { grid-area: panel; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+.btn {
+  min-height: 48px; padding: 0 12px;
+  border: 1px solid var(--line); background: var(--surface); border-radius: 12px;
+  font-size: 15px; cursor: pointer; white-space: nowrap;
+}
+.btn:active { background: rgba(255, 255, 255, 0.12); }
+.btn[aria-pressed="true"] { border-color: var(--accent); background: rgba(255, 122, 69, 0.16); color: #ffd9c9; }
+.btn--primary, .btn--play { background: var(--accent); border-color: var(--accent); color: #1a0c05; font-weight: 700; }
+.btn--play:active { background: #ff996e; }
+
+.controls { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 8px; }
+.btn--play { font-size: 22px; min-height: 52px; }
+.speed { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.speed .btn { padding: 0 4px; font-size: 14px; }
+
+.label { margin: 6px 0 0; font-size: 13px; font-weight: 600; color: var(--muted); display: flex; gap: 8px; align-items: baseline; }
+.label code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; color: var(--fg); letter-spacing: 0.08em; }
+
+/* ルールの札: 色の四角 + 曲がり方。12 枚まで折り返して並べる */
+.cards { display: flex; flex-wrap: wrap; gap: 6px; }
+.card {
+  width: 46px; height: 56px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  border: 1px solid var(--line); background: var(--surface); border-radius: 10px;
+  font-size: 15px; font-weight: 600; cursor: pointer; padding: 0;
+}
+.card__swatch { width: 22px; height: 22px; border-radius: 5px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25); }
+.card--op { font-size: 22px; font-weight: 400; color: var(--muted); }
+.card:disabled { opacity: 0.35; cursor: default; }
+
+/* 見本: はみ出したら横にスクロール */
+.samples { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; overscroll-behavior-x: contain; }
+.samples::-webkit-scrollbar { display: none; }
+.sample { flex: none; }
+
+.foot { margin-top: 8px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.foot__actions { display: flex; gap: 8px; }
+.pill {
+  min-height: 44px;
+  border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
+  padding: 0 16px; font-size: 14px; cursor: pointer;
+}
+.credit { margin: 0; font-size: 13px; color: var(--muted); }
+.credit a { color: inherit; display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px; }
+
+/* 横長の画面: 盤を高さいっぱいにして左に置き、右の列だけスクロールしていく */
+@media (orientation: landscape) and (min-width: 560px) {
+  .app {
+    max-width: 1280px;
+    grid-template-columns: auto minmax(260px, 460px);
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "board bar" "board panel";
+    justify-content: center;
+    column-gap: 20px;
+  }
+  .board {
+    align-self: start;
+    position: sticky;
+    top: max(12px, env(safe-area-inset-top));
+    width: min(calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 60vw);
+  }
+}
+
+/* 遊び方の重ね画面。隠すときは display: none（[hidden]） */
+.help {
+  position: fixed; inset: 0; z-index: 10;
+  display: grid; place-items: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: rgba(8, 9, 12, 0.72);
+  overflow-y: auto;
+}
+.help__box {
+  width: min(100%, 420px);
+  background: #171a21; border: 1px solid var(--line); border-radius: 18px;
+  padding: 20px; line-height: 1.6;
+}
+.help__box h2 { margin: 0 0 8px; font-size: 18px; }
+.help__box ol { margin: 0 0 12px; padding-left: 1.3em; font-size: 15px; }
+.help__box li + li { margin-top: 6px; }
+.help__note { margin: 0 0 16px; font-size: 13px; color: var(--muted); }
+.help__box .btn { width: 100%; }
